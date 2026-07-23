@@ -35,6 +35,7 @@ interface VideoCardProps {
   rate?: string;
   items?: SearchResult[];
   type?: string;
+  openInNewTab?: boolean;
 }
 
 export default function VideoCard({
@@ -54,6 +55,7 @@ export default function VideoCard({
   rate,
   items,
   type = '',
+  openInNewTab = false,
 }: VideoCardProps) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(false);
@@ -196,22 +198,27 @@ export default function VideoCard({
   );
 
   const handleClick = useCallback(() => {
+    let playUrl = '';
     if (from === 'douban') {
-      router.push(
-        `/play?title=${encodeURIComponent(actualTitle.trim())}${
+      playUrl = `/play?title=${encodeURIComponent(actualTitle.trim())}${
           actualYear ? `&year=${actualYear}` : ''
-        }${actualSearchType ? `&stype=${actualSearchType}` : ''}`
-      );
+        }${actualSearchType ? `&stype=${actualSearchType}` : ''}`;
     } else if (actualSource && actualId) {
-      router.push(
-        `/play?source=${actualSource}&id=${actualId}&title=${encodeURIComponent(
+      playUrl = `/play?source=${actualSource}&id=${actualId}&title=${encodeURIComponent(
           actualTitle
         )}${actualYear ? `&year=${actualYear}` : ''}${
           isAggregate ? '&prefer=true' : ''
         }${
           actualQuery ? `&stitle=${encodeURIComponent(actualQuery.trim())}` : ''
-        }${actualSearchType ? `&stype=${actualSearchType}` : ''}`
-      );
+        }${actualSearchType ? `&stype=${actualSearchType}` : ''}`;
+    }
+
+    if (!playUrl) return;
+
+    if (openInNewTab) {
+      window.open(playUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      router.push(playUrl);
     }
   }, [
     from,
@@ -223,6 +230,7 @@ export default function VideoCard({
     isAggregate,
     actualQuery,
     actualSearchType,
+    openInNewTab,
   ]);
 
   const config = useMemo(() => {

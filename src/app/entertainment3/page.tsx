@@ -20,11 +20,6 @@ function Entertainment3PageClient() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
-  const SCROLL_STORAGE_KEY = 'entertainment3_scroll';
-  const scrollYRef = useRef(0);
-  const pendingScrollY = useRef<number | null>(null);
-  const skipRestoreFetchRef = useRef(false);
-  const stateRef = useRef({ data, currentPage, hasMore });
 
   const skeletonData = Array.from({ length: 25 }, (_, index) => index);
 
@@ -53,77 +48,11 @@ function Entertainment3PageClient() {
   }, [getRequestParams]);
 
   useEffect(() => {
-    stateRef.current = { data, currentPage, hasMore };
-  });
-
-  useEffect(() => {
-    const onScroll = () => {
-      scrollYRef.current = window.scrollY;
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (
-          parsed.timestamp &&
-          Date.now() - parsed.timestamp < 30 * 60 * 1000 &&
-          Array.isArray(parsed.data) &&
-          parsed.data.length > 0
-        ) {
-          setData(parsed.data);
-          setHasMore(Boolean(parsed.hasMore));
-          setLoading(false);
-          pendingScrollY.current = parsed.scrollY ?? 0;
-          if (parsed.currentPage > 0) {
-            skipRestoreFetchRef.current = true;
-            setCurrentPage(parsed.currentPage);
-          }
-          return;
-        }
-      }
-    } catch {
-      // restore failed, fall back to fresh load
-    }
     loadInitialData();
   }, [loadInitialData]);
 
   useEffect(() => {
-    if (pendingScrollY.current === null || loading) return;
-    const y = pendingScrollY.current;
-    pendingScrollY.current = null;
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => window.scrollTo(0, y))
-    );
-  }, [data, loading]);
-
-  useEffect(() => {
-    return () => {
-      try {
-        sessionStorage.setItem(
-          SCROLL_STORAGE_KEY,
-          JSON.stringify({
-            ...stateRef.current,
-            scrollY: scrollYRef.current,
-            timestamp: Date.now(),
-          })
-        );
-      } catch {
-        // ignore quota errors
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     if (currentPage > 0) {
-      if (skipRestoreFetchRef.current) {
-        skipRestoreFetchRef.current = false;
-        return;
-      }
       const fetchMoreData = async () => {
         try {
           setIsLoadingMore(true);
@@ -205,6 +134,7 @@ function Entertainment3PageClient() {
                       poster={item.poster}
                       rate={item.rate}
                       year={item.year}
+                      openInNewTab
                     />
                   </div>
                 ))}
